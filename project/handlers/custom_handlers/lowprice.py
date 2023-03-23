@@ -3,8 +3,7 @@ from telebot.types import Message
 from loader import bot
 
 
-@bot.message_handler(commands=["help"])
+@bot.message_handler(commands=["lowprice"])
 def bot_low_price(message: Message):
-    """/help — помощь по командам бота,"""
-    text = [f"/{command} - {desk}" for command, desk in DEFAULT_COMMANDS]
-    bot.reply_to(message, "\n".join(text))
+    """/lowprice — вывод самых дешёвых отелей в городе,"""
+    bot.reply_to(message, "В каком городе искать отель?")
