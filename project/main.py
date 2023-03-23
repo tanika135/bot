@@ -1,6 +1,5 @@
-from telegram_bot import TelegramBot
-
+from loader import bot
+import handlers
 
 if __name__ == '__main__':
-    bot = TelegramBot()
-    bot.run()
+    bot.infinity_polling()

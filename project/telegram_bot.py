@@ -1,33 +1,62 @@
+from requests import get
+
+from config_data import config
 import requests
 import telebot
 from dotenv import load_dotenv
 import os
 
 
+def api_request(method_endswith,  # Меняется в зависимости от запроса. locations/v3/search либо properties/v2/list
+                params,  # Параметры, если locations/v3/search, то {'q': 'Рига', 'locale': 'ru_RU'}
+                method_type  # Метод\тип запроса GET\POST
+                ):
+    url = f"https://hotels4.p.rapidapi.com/{method_endswith}"
+
+    # В зависимости от типа запроса вызываем соответствующую функцию
+    if method_type == 'GET':
+        return get_request(
+            url=url,
+            params=params
+        )
+    # else:
+    #     return post_request(
+    #         url=url,
+    #         params=params
+    #     )
+
+
+def get_request(url, params):
+    try:
+        response = get(
+            url,
+            #headers=...,
+            params=params,
+            timeout=15
+        )
+        if response.status_code == requests.codes.ok:
+            return response.json()
+    except ValueError as error:
+        print('Ошибка приложения: ' + str(error))
+
+
 class TelegramBot:
     def __init__(self):
-        load_dotenv()
-        self.__api_token = os.environ['API_TOKEN']
+
+        self.__bot_token = config.BOT_TOKEN
+        self.__city = ''
 
     def run(self):
-        bot = telebot.TeleBot(self.__api_token)
-        print('running')
 
-        @bot.message_handler(commands=['help'])
-        def help_handler(message):
-            """/help — помощь по командам бота,"""
-            bot.reply_to(message, """
-/help — помощь по командам бота,
-/lowprice — вывод самых дешёвых отелей в городе,
-/highprice — вывод самых дорогих отелей в городе,
-/bestdeal — вывод отелей, наиболее подходящих по цене и расположению от центра.
-/history — вывод истории поиска отелей.
-            """)
+
+
 
         @bot.message_handler(commands=['lowprice'])
         def lowprice_handler(message):
             """/lowprice — вывод самых дешёвых отелей в городе"""
-            bot.reply_to(message, " command - lowprice")
+            bot.reply_to(message, "В каком городе искать отель?")
+            print('1')
+
 
         @bot.message_handler(commands=['highprice'])
         def highprice_handler(message):
