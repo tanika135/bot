@@ -1,7 +1,6 @@
-from telebot import TeleBot
-from telebot.storage import StateMemoryStorage
+from aiogram import Bot
 from config_data import config
 
-storage = StateMemoryStorage()
-bot = TeleBot(token=config.BOT_TOKEN, state_storage=storage)
-print('running')
+
+bot = Bot(config.BOT_TOKEN, parse_mode='HTML')
+

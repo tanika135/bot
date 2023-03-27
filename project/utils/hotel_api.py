@@ -1,5 +1,6 @@
 from requests import get
 import requests
+from config_data import config
 
 
 def api_request(method_endswith,  # Меняется в зависимости от запроса. locations/v3/search либо properties/v2/list
@@ -25,7 +26,10 @@ def get_request(url, params):
     try:
         response = get(
             url,
-            #headers=...,
+            headers={
+                "X-RapidAPI-Key": config.RAPID_API_KEY,
+                "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
+            },
             params=params,
             timeout=15
         )
