@@ -10,6 +10,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 RAPID_API_KEY = os.getenv("RAPID_API_KEY")
 admin_id = os.getenv("admin_id")
 DEFAULT_COMMANDS = (
+    ("hello_world", "приветствие"),
     ("help", "помощь по командам бота"),
     ("lowprice", "вывод самых дешёвых отелей в городе"),
     ("highprice", "вывод самых дорогих отелей в городе"),

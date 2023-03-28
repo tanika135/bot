@@ -4,8 +4,8 @@ from config_data.config import DEFAULT_COMMANDS, admin_id
 from loader import bot
 
 
-async def start_bot(dp):
-    await bot.send_message(chat_id=admin_id, text='бот запущен')
+# async def start_bot(dp):
+#     await bot.send_message(chat_id=admin_id, text='бот запущен')
 
 
 @dp.message_handler(commands=["help"])
@@ -16,4 +16,4 @@ async def bot_help(message: Message):
                            text="\n".join(text))
     # text = [f"/{command} - {desk}" for command, desk in DEFAULT_COMMANDS]DEFAULT_COMMANDS
     # bot.reply_to(message, "\n".join(text))
-    #await bot.send_message(chat_id=admin_id, text='бот запущен')
+
