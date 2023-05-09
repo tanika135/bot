@@ -5,7 +5,6 @@ from aiogram.types import Message
 from aiogram.dispatcher import FSMContext
 import datetime
 from loader import bot
-import json
 
 
 def api_request(method_endswith,  # Меняется в зависимости от запроса. locations/v3/search либо properties/v2/list
@@ -14,27 +13,29 @@ def api_request(method_endswith,  # Меняется в зависимости �
                 ):
     url = f"https://hotels4.p.rapidapi.com/{method_endswith}"
 
-    # В зависимости от типа запроса вызываем соответствующую функцию
+    headers = {
+        "X-RapidAPI-Key": config.RAPID_API_KEY,
+        "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
+    }
     if method_type == 'GET':
         return get_request(
             url=url,
-            params=params
+            params=params,
+            headers=headers
         )
     else:
         return post_request(
             url=url,
-            params=params
+            params=params,
+            headers=headers
         )
 
 
-def get_request(url, params):
+def get_request(url, params, headers):
     try:
         response = get(
             url,
-            headers={
-                "X-RapidAPI-Key": config.RAPID_API_KEY,
-                "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
-            },
+            headers=headers,
             params=params,
             timeout=15
         )
@@ -44,15 +45,12 @@ def get_request(url, params):
         print('Ошибка приложения: ' + str(error))
 
 
-def post_request(url, params):
+def post_request(url, params, headers):
     try:
+        headers["content-type"] = "application/json"
         response = post(
             url,
-            headers={
-                "content-type": "application/json",
-                "X-RapidAPI-Key": config.RAPID_API_KEY,
-                "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
-            },
+            headers=headers,
             json=params,
             timeout=15
         )
@@ -60,6 +58,7 @@ def post_request(url, params):
             return response.json()
     except ValueError as error:
         print('Ошибка приложения: ' + str(error))
+
 
 async def start_search(message: Message, state: FSMContext, need_photo):
 
