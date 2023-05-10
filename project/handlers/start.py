@@ -19,13 +19,3 @@ async def hello_world(message: Message):
 async def hello_world(message: Message):
     await message.reply(f"Привет, {message.from_user.full_name}!")
 
-
-# @dp.message_handler(filters.Text(contains=HI, ignore_case=True))
-# async def echo_message(message: Message):
-#     await message.reply(f"Привет, {message.from_user.full_name}!")
-
-
-    # if message.text.lower() == "привет" or message.text == "/hello_world":
-    #     bot.send_message(message.from_user.id, "Привет, чем я могу тебе помочь?")
-    # else:
-    #     bot.send_message(message.from_user.id, "Я тебя не понимаю. Напиши /help.")
