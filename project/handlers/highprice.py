@@ -1,8 +1,13 @@
+from aiogram.dispatcher import FSMContext
 from aiogram.types import Message
-from loader import bot
+from main import dp
+from states.states import FSMHotels
 
-#
-# @bot.message_handler(commands=['highprice'])
-# def highprice_handler(message):
-#     """/highprice — вывод самых дорогих отелей в городе,"""
-#     bot.reply_to(message, " command - highprice")
+
+@dp.message_handler(commands=["highprice"], state=None)
+async def low_price_start(message: Message, state: FSMContext):
+    """/highprice — вывод самых дешёвых отелей в городе,"""
+    await FSMHotels.city.set()
+    async with state.proxy() as data:
+        data["sort"] = 'h2l'
+    await message.answer("В каком городе искать отель?")

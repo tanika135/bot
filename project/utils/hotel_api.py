@@ -61,15 +61,15 @@ def post_request(url, params, headers):
 
 
 async def start_search(message: Message, state: FSMContext, need_photo):
-
     data = await state.get_data()
     num_res = data.get("num_res")
     city_gues = data.get("city_gues")
     result = data["city_results"]
     num_photo = data["num_photo"]
+    sort = data['sort']
 
     await message.answer("Спасибо за ваши ответы! Ищем ....")
-    hotels = search_hotels(result[city_gues]["gaiaId"], num_res)
+    hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort)
     print(hotels)
 
     if result:
@@ -105,10 +105,15 @@ def search_locations(city: str) -> list:
     return result
 
 
-def search_hotels(region: str, limit: int) -> list:
+def search_hotels(region: str, limit: int, sort: str = 'l2h') -> list:
     today = datetime.date.today()
     start_date = today + datetime.timedelta(days=1)
     end_date = today + datetime.timedelta(days=5)
+    if sort == 'l2h':
+        sort = "PRICE_LOW_TO_HIGH"
+    else:
+        sort = "PRICE_HIGH_TO_LOW"
+
     payload = {
         "currency": "USD",
         "eapid": 1,
@@ -130,7 +135,7 @@ def search_hotels(region: str, limit: int) -> list:
         "rooms": [{"adults": 1}],
         "resultsStartingIndex": 0,
         "resultsSize": limit,
-        "sort": "PRICE_LOW_TO_HIGH",
+        "sort": sort,
     }
 
     response = api_request(method_endswith='properties/v2/list', params=payload, method_type='POST')
