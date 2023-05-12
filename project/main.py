@@ -14,8 +14,11 @@ else:
 dp = Dispatcher(bot, loop=loop, storage=MemoryStorage())
 dp.middleware.setup(LoggingMiddleware())
 
+
+async def on_startup(_):
+    print('running')
+
 if __name__ == '__main__':
     from handlers.help import dp
-    print('running')
-    executor.start_polling(dp)
+    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
 
