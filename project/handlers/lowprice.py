@@ -25,7 +25,7 @@ async def enter_city_name(message: Message, state: FSMContext):
             data["city_gues"] = 0
 
     if len(result) > 0:
-        await message.answer(f'В ищите отели в: {result[0]["name"]} ?')
+        await message.answer(f'В ищите отели в: {result[0]["name"]} ?  Да/Нет')
         await FSMHotels.city_confirm.set()
     else:
         await message.answer("По вашему запросу ничего не найдено. Попробуйте другой город.")
@@ -37,13 +37,19 @@ async def confirm_city(message: Message, state: FSMContext):
 
     data = await state.get_data()
     city_gues = data.get("city_gues")
-    result = data["city_results"]
+    result = data.get("city_results")
+    bestdeal = data.get("bestdeal") == "y"
     if confirm:
         async with state.proxy() as data:
             data["city_confirm"] = city_gues
-        await FSMHotels.num_results.set()
         await message.answer(f'Ищем отели в: {result[city_gues]["name"]}')
-        await message.answer("Укажите количество отелей, которые необходимо вывести в результате (не более 5).")
+
+        if bestdeal:
+            await FSMHotels.min_price.set()
+            await message.answer("Укажите минимальную цену за номер.")
+        else:
+            await FSMHotels.num_results.set()
+            await message.answer("Укажите количество отелей, которые необходимо вывести в результате (не более 5).")
     else:
         async with state.proxy() as data:
             next_city = city_gues + 1
@@ -53,6 +59,9 @@ async def confirm_city(message: Message, state: FSMContext):
             else:
                 await FSMHotels.city.set()
                 await message.answer("По вашему запросу ничего не найдено. Попробуйте другой город.")
+
+
+
 
 
 @dp.message_handler(state=FSMHotels.num_results)
