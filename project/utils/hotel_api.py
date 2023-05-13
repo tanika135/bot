@@ -68,20 +68,35 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     num_photo = data.get("num_photo")
     sort = data.get('sort')
 
+    bestdeal = data.get("bestdeal") == "y"
+    min_price = data.get('min_price')
+    max_price = data.get('max_price')
+    distance = float(data.get("distance"))
+
+    filters = False
+    if bestdeal:
+        filters = {
+            "price": {
+                "max": max_price,
+                "min": min_price
+            }
+        }
+
     await message.answer("Спасибо за ваши ответы! Ищем ....")
-    hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort)
-    print(hotels)
+    hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort, filters, distance)
 
     if result:
         for hotel in hotels:
             if not need_photo:
                 await bot.send_message(chat_id=message.from_user.id,
-                                       text=f'hotel: {hotel["name"]} price: {hotel["price"]}')
+                                       text=f'Отель: {hotel["name"]} цена: {hotel["price"]} '
+                                            f'расстояние: {hotel["distance"]}')
             else:
                 images = get_hotel_images(hotel_id=str(hotel['id']), photo_limit=num_photo)
                 for image in images:
                     await bot.send_photo(chat_id=message.chat.id, photo=image["url"],
-                                         caption=f'hotel: {hotel["name"]} price: {hotel["price"]}')
+                                         caption=f'Отель: {hotel["name"]} цена: {hotel["price"]} '
+                                            f'расстояние: {hotel["distance"]}')
                 print(images)
     else:
         await message.answer("По запросу ничего не найдено")
@@ -107,7 +122,7 @@ def search_locations(city: str) -> list:
     return result
 
 
-def search_hotels(region: str, limit: int, sort: str = 'l2h') -> list:
+def search_hotels(region: str, limit: int, sort: str = 'l2h', filter=False, distance=0.0) -> list:
     today = datetime.date.today()
     start_date = today + datetime.timedelta(days=1)
     end_date = today + datetime.timedelta(days=5)
@@ -141,6 +156,12 @@ def search_hotels(region: str, limit: int, sort: str = 'l2h') -> list:
         "sort": "PRICE_LOW_TO_HIGH",
     }
 
+    if filter:
+        payload['filters'] = filter
+    if sort == 'distance':
+        payload['sort'] = 'DISTANCE'
+
+    print(payload)
     response = api_request(method_endswith='properties/v2/list', params=payload, method_type='POST')
 
     result = []
@@ -148,20 +169,28 @@ def search_hotels(region: str, limit: int, sort: str = 'l2h') -> list:
         return result
     data = response["data"]
 
-    hotels_counter = 0
+    hotels_counter = 1
     if "propertySearch" in data:
         hotels = data["propertySearch"]["properties"]
         if hotels:
-            if sort != 'l2h':
+            if sort == 'h2l':
                 hotels = hotels[::-1]
 
             for entry in hotels:
                 if hotels_counter <= limit:
+                    if distance:
+                        if entry["destinationInfo"]["distanceFromDestination"]["value"] > distance:
+                            continue
+                    if "price" in filter:
+                        price = entry['price']["lead"]["amount"]
+                        if price > filter["price"]["max"] or price < filter["price"]["min"]:
+                            continue
                     hotel = {
                         "id": entry["id"],
                         "name": entry["name"],
                         "image": "",
-                        "price": entry['price']["lead"]["formatted"]
+                        "price": entry['price']["lead"]["formatted"],
+                        "distance": entry["destinationInfo"]["distanceFromDestination"]["value"]
                     }
                     if entry["propertyImage"] and "url" in entry["propertyImage"]["image"]:
                         hotel["image"] = entry["propertyImage"]["image"]["url"]
@@ -169,6 +198,8 @@ def search_hotels(region: str, limit: int, sort: str = 'l2h') -> list:
                     result.append(hotel)
                     hotels_counter += 1
 
+    if sort == 'distance':
+        result = sorted(result, key=lambda hotel: hotel["price"])
     return result
 
 

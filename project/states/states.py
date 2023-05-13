@@ -7,3 +7,6 @@ class FSMHotels(StatesGroup):
     num_results = State()
     need_photo = State()
     num_photo = State()
+    min_price = State()
+    max_price = State()
+    distance = State()
