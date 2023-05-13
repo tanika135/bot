@@ -61,25 +61,27 @@ def post_request(url, params, headers):
 
 
 async def start_search(message: Message, state: FSMContext, need_photo):
-
     data = await state.get_data()
     num_res = data.get("num_res")
     city_gues = data.get("city_gues")
-    result = data["city_results"]
-    num_photo = data["num_photo"]
+    result = data.get("city_results")
+    num_photo = data.get("num_photo")
+    sort = data.get('sort')
 
     await message.answer("Спасибо за ваши ответы! Ищем ....")
-    hotels = search_hotels(result[city_gues]["gaiaId"], num_res)
+    hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort)
     print(hotels)
 
     if result:
         for hotel in hotels:
             if not need_photo:
-                await bot.send_message(chat_id=message.from_user.id, text=f'hotel: {hotel["name"]}')
+                await bot.send_message(chat_id=message.from_user.id,
+                                       text=f'hotel: {hotel["name"]} price: {hotel["price"]}')
             else:
                 images = get_hotel_images(hotel_id=str(hotel['id']), photo_limit=num_photo)
                 for image in images:
-                    await bot.send_photo(chat_id=message.chat.id, photo=image["url"], caption=hotel["name"])
+                    await bot.send_photo(chat_id=message.chat.id, photo=image["url"],
+                                         caption=f'hotel: {hotel["name"]} price: {hotel["price"]}')
                 print(images)
     else:
         await message.answer("По запросу ничего не найдено")
@@ -105,10 +107,16 @@ def search_locations(city: str) -> list:
     return result
 
 
-def search_hotels(region: str, limit: int) -> list:
+def search_hotels(region: str, limit: int, sort: str = 'l2h') -> list:
     today = datetime.date.today()
     start_date = today + datetime.timedelta(days=1)
     end_date = today + datetime.timedelta(days=5)
+
+    if sort == 'l2h':
+        request_limit = limit
+    else:
+        request_limit = 200
+
     payload = {
         "currency": "USD",
         "eapid": 1,
@@ -129,7 +137,7 @@ def search_hotels(region: str, limit: int) -> list:
         },
         "rooms": [{"adults": 1}],
         "resultsStartingIndex": 0,
-        "resultsSize": limit,
+        "resultsSize": request_limit,
         "sort": "PRICE_LOW_TO_HIGH",
     }
 
@@ -140,19 +148,26 @@ def search_hotels(region: str, limit: int) -> list:
         return result
     data = response["data"]
 
+    hotels_counter = 0
     if "propertySearch" in data:
-        search_results = data["propertySearch"]["properties"]
-        if search_results:
-            for entry in search_results:
-                hotel = {
-                    "id": entry["id"],
-                    "name": entry["name"],
-                    "image": ""
-                }
-                if entry["propertyImage"] and "url" in entry["propertyImage"]["image"]:
-                    hotel["image"] = entry["propertyImage"]["image"]["url"]
+        hotels = data["propertySearch"]["properties"]
+        if hotels:
+            if sort != 'l2h':
+                hotels = hotels[::-1]
 
-                result.append(hotel)
+            for entry in hotels:
+                if hotels_counter <= limit:
+                    hotel = {
+                        "id": entry["id"],
+                        "name": entry["name"],
+                        "image": "",
+                        "price": entry['price']["lead"]["formatted"]
+                    }
+                    if entry["propertyImage"] and "url" in entry["propertyImage"]["image"]:
+                        hotel["image"] = entry["propertyImage"]["image"]["url"]
+
+                    result.append(hotel)
+                    hotels_counter += 1
 
     return result
 
@@ -166,9 +181,9 @@ def get_hotel_images(hotel_id: str, photo_limit: int) -> list:
         "siteId": 300000001,
         "propertyId": hotel_id
     }
-    print(payload)
+
     response = api_request(method_endswith='properties/v2/detail', params=payload, method_type='POST')
-    print(response)
+
     data = response["data"]
     num_photo = 1
     if "propertyInfo" in data:

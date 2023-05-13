@@ -2,20 +2,15 @@ from aiogram.types import Message
 from main import dp
 from aiogram.dispatcher import FSMContext
 from states.states import FSMHotels
-
 from utils.hotel_api import api_request, search_locations, start_search
 
 
-
 @dp.message_handler(commands=["lowprice"], state=None)
-async def low_price_start(message: Message):
+async def low_price_start(message: Message, state: FSMContext):
     """/lowprice — вывод самых дешёвых отелей в городе,"""
-
-    """params = {'q': 'Рига', 'locale': 'ru_RU'}
-    res = api_request(method_endswith='locations/v3/search', params=params, method_type='GET')
-    print(res)"""
-
     await FSMHotels.city.set()
+    async with state.proxy() as data:
+        data["sort"] = 'l2h'
     await message.answer("В каком городе искать отель?")
 
 
