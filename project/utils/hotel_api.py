@@ -71,7 +71,12 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     bestdeal = data.get("bestdeal") == "y"
     min_price = data.get('min_price')
     max_price = data.get('max_price')
-    distance = float(data.get("distance"))
+    distance = data.get("distance")
+
+    history = data.get("history")
+
+    if distance:
+        distance = float(distance)
 
     filters = False
     if bestdeal:
@@ -84,6 +89,22 @@ async def start_search(message: Message, state: FSMContext, need_photo):
 
     await message.answer("Спасибо за ваши ответы! Ищем ....")
     hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort, filters, distance)
+
+    async with state.proxy() as new_data:
+        history_result = ""
+        for hotel in hotels:
+            history_result += f'Отель: {hotel["name"]} цена: {hotel["price"]} расстояние: {hotel["distance"]} '
+        now = datetime.datetime.now()
+
+        if not history:
+            history = []
+
+        history.append({
+            "command": data.get('command'),
+            "time": now.strftime("%d/%m/%Y %H:%M:%S"),
+            "hotels": history_result
+        })
+        new_data["history"] = history
 
     if result:
         for hotel in hotels:
@@ -101,7 +122,6 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     else:
         await message.answer("По запросу ничего не найдено")
     await state.reset_state(with_data=False)
-
 
 def search_locations(city: str) -> list:
     params = {'q': city, 'locale': 'en_US'}
@@ -181,7 +201,7 @@ def search_hotels(region: str, limit: int, sort: str = 'l2h', filter=False, dist
                     if distance:
                         if entry["destinationInfo"]["distanceFromDestination"]["value"] > distance:
                             continue
-                    if "price" in filter:
+                    if filter and "price" in filter:
                         price = entry['price']["lead"]["amount"]
                         if price > filter["price"]["max"] or price < filter["price"]["min"]:
                             continue

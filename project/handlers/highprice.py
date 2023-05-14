@@ -10,4 +10,5 @@ async def low_price_start(message: Message, state: FSMContext):
     await FSMHotels.city.set()
     async with state.proxy() as data:
         data["sort"] = 'h2l'
+        data["command"] = "highprice"
     await message.answer("В каком городе искать отель?")
