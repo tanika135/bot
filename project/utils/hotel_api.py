@@ -4,6 +4,8 @@ from config_data import config
 from aiogram.types import Message
 from aiogram.dispatcher import FSMContext
 import datetime
+
+from database.storage import DB
 from loader import bot
 
 
@@ -73,8 +75,6 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     max_price = data.get('max_price')
     distance = data.get("distance")
 
-    history = data.get("history")
-
     if distance:
         distance = float(distance)
 
@@ -90,21 +90,8 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     await message.answer("Спасибо за ваши ответы! Ищем ....")
     hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort, filters, distance)
 
-    async with state.proxy() as new_data:
-        history_result = ""
-        for hotel in hotels:
-            history_result += f'Отель: {hotel["name"]} цена: {hotel["price"]} расстояние: {hotel["distance"]} '
-        now = datetime.datetime.now()
-
-        if not history:
-            history = []
-
-        history.append({
-            "command": data.get('command'),
-            "time": now.strftime("%d/%m/%Y %H:%M:%S"),
-            "hotels": history_result
-        })
-        new_data["history"] = history
+    db = DB()
+    db.add_history(data.get('command'), message.chat.id, hotels)
 
     if result:
         for hotel in hotels:
