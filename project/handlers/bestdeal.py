@@ -11,6 +11,7 @@ async def low_price_start(message: Message, state: FSMContext):
     async with state.proxy() as data:
         data["sort"] = 'distance'
         data["bestdeal"] = 'y'
+        data["command"] = "bestdeal"
     await message.answer("В каком городе искать отель?")
 
 

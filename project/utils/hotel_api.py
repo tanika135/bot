@@ -4,6 +4,8 @@ from config_data import config
 from aiogram.types import Message
 from aiogram.dispatcher import FSMContext
 import datetime
+
+from database.storage import DB
 from loader import bot
 
 
@@ -71,7 +73,10 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     bestdeal = data.get("bestdeal") == "y"
     min_price = data.get('min_price')
     max_price = data.get('max_price')
-    distance = float(data.get("distance"))
+    distance = data.get("distance")
+
+    if distance:
+        distance = float(distance)
 
     filters = False
     if bestdeal:
@@ -84,6 +89,9 @@ async def start_search(message: Message, state: FSMContext, need_photo):
 
     await message.answer("Спасибо за ваши ответы! Ищем ....")
     hotels = search_hotels(result[city_gues]["gaiaId"], num_res, sort, filters, distance)
+
+    db = DB()
+    db.add_history(data.get('command'), message.chat.id, hotels)
 
     if result:
         for hotel in hotels:
@@ -101,7 +109,6 @@ async def start_search(message: Message, state: FSMContext, need_photo):
     else:
         await message.answer("По запросу ничего не найдено")
     await state.reset_state(with_data=False)
-
 
 def search_locations(city: str) -> list:
     params = {'q': city, 'locale': 'en_US'}
@@ -181,7 +188,7 @@ def search_hotels(region: str, limit: int, sort: str = 'l2h', filter=False, dist
                     if distance:
                         if entry["destinationInfo"]["distanceFromDestination"]["value"] > distance:
                             continue
-                    if "price" in filter:
+                    if filter and "price" in filter:
                         price = entry['price']["lead"]["amount"]
                         if price > filter["price"]["max"] or price < filter["price"]["min"]:
                             continue
